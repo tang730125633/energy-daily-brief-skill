@@ -1,4 +1,4 @@
-# 能源行业日报系统 v2.2 - 部署指令
+# 零碳能源行业早报系统 v3.1 - 部署指令
 
 ## GitHub 仓库
 
@@ -8,16 +8,11 @@ https://github.com/tang730125633/energy-daily-brief-skill
 
 ## 完整部署提示词（直接发给 AI 执行）
 
-请把以下内容完整发送给戴总电脑上的 OpenClaw 或 Claude Code：
+请把以下内容完整发送给戴总电脑上的 AI 助手（Claude Code / OpenClaw 等）：
 
 ---
 
-你好，我现在要教你部署一个新的技能：**能源行业早报 + 行业标准检索系统**。
-
-系统包含三大模块：
-1. **能源早报** (`energy_morning_brief.cjs`) — 每日从5个政府/行业网站抓取昨日能源资讯，生成带摘要、价值分析、真实链接的早报
-2. **行业标准检索** (`industry_standards_crawler.cjs`) — 从学兔兔和国标平台检索能源相关标准和规范
-3. **三站政策监控** (`gov_energy_monitor.cjs`) — 14天滚动窗口政策监控（可选）
+你好，请帮我部署**零碳能源行业早报系统**。这是一个 Node.js 脚本，每天自动爬取7个能源网站，生成精简早报并推送企业微信。
 
 请严格按以下步骤执行，每完成一步告诉我结果：
 
@@ -33,110 +28,125 @@ git clone https://github.com/tang730125633/energy-daily-brief-skill.git ~/.openc
 cd ~/.openclaw/workspace/projects/能源行业日报 && git pull
 ```
 
-### 第二步：测试早报系统（核心功能）
+### 第二步：测试运行
 
 ```bash
-node ~/.openclaw/workspace/projects/能源行业日报/energy_morning_brief.cjs --date 2026-03-24 --dry-run --no-download
+cd ~/.openclaw/workspace/projects/能源行业日报
+node energy_morning_brief.cjs --dry-run --no-download
 ```
 
 执行后告诉我：
-1. 5个站点（发改委/能源局/华中监管局/湖北省能源局/长江金属）各抓到多少条？
+1. 7个站点各抓到多少条？
 2. 去重+关键词过滤后剩几条？
-3. 摘要和价值分析是否正常生成？
-4. 湖北省能源局如果显示"412 Precondition Failed"是正常的（该站有WAF防护，脚本会自动跳过并标注）
+3. 6大板块是否正常显示？（一、今日最重要 / 二、政策与行业 / 三、湖北本地 / 四、AI+电力 / 五、铜价与材料 / 六、重点机会提示）
+4. 湖北省能源局如果显示"412"是正常的（该站有WAF，脚本会自动跳过）
 
-### 第三步：测试行业标准检索
-
-```bash
-node ~/.openclaw/workspace/projects/能源行业日报/industry_standards_crawler.cjs --dry-run
-```
-
-执行后告诉我：
-1. 学兔兔匹配了多少条标准？
-2. 国标平台搜索是否成功？
-
-### 第四步：生成一份完整早报
+### 第三步：生成完整早报
 
 ```bash
-node ~/.openclaw/workspace/projects/能源行业日报/energy_morning_brief.cjs --no-download
+node energy_morning_brief.cjs --no-download
 ```
 
-这会：
-- 抓取昨日所有能源资讯
-- 获取每篇文章的摘要和价值分析
-- 按类别（铜价行情/电价与市场/电网/光伏/储能...）组织内容
-- 保存到 `审核池/YYYY-MM-DD/早报_YYYY-MM-DD.md`
+这会生成完整早报并保存到 `审核池/YYYY-MM-DD/早报_YYYY-MM-DD.md`
 
-### 第五步：指定日期生成（核心突破功能）
+### 第四步：配置企业微信推送
 
 ```bash
-node ~/.openclaw/workspace/projects/能源行业日报/energy_morning_brief.cjs --date 2026-03-20 --dry-run --no-download
+node energy_morning_brief.cjs --wecom-url "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=你的KEY"
 ```
 
-可以指定任意日期生成该日的早报内容。
+### 第五步：配置每天8点定时任务
 
-### 第六步：配置定时任务
-
-每天早上 8:00 自动生成早报并推送企业微信：
+用 crontab 或 launchd 设置每天早上8点运行：
 
 ```bash
-# 在 cron 或 OpenClaw 定时任务中添加：
-node ~/.openclaw/workspace/projects/能源行业日报/energy_morning_brief.cjs --wecom-url "企业微信WEBHOOK地址"
+# 编辑crontab
+crontab -e
+
+# 添加这一行（每天8:00北京时间执行）
+0 8 * * * cd ~/.openclaw/workspace/projects/能源行业日报 && node energy_morning_brief.cjs --wecom-url "你的WEBHOOK地址" >> cron.log 2>&1
 ```
 
-标准检索可以每周运行一次（带下载功能）：
+### 完成后请汇报
 
-```bash
-node ~/.openclaw/workspace/projects/能源行业日报/industry_standards_crawler.cjs --download
-```
-
-### 第七步：配置企业微信推送
-
-如果已有企业微信 Webhook URL：
-
-```bash
-node ~/.openclaw/workspace/projects/能源行业日报/energy_morning_brief.cjs --wecom-url "https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=YOUR_KEY"
-```
-
-### 完成后
-
-请汇报：
-1. 早报系统5个站点的抓取结果
-2. 行业标准检索是否正常
-3. 生成的早报内容样本
-4. 企业微信推送是否成功
+1. 7个站点的抓取结果
+2. 生成的早报内容样本（截前几行给我看）
+3. 企业微信推送是否成功
 
 ---
 
-## 系统架构说明
+## 早报格式说明（v3.1 精简版）
 
-### 早报数据来源（5个站点）
+早报共6大板块，每条精简为：**【标题】→ 100字摘要 → 👉影响 → 🔗来源链接**
 
-| 站点 | URL | 说明 |
-|------|-----|------|
-| 国家发改委 | ndrc.gov.cn | 4个栏目（通知/规范性文件/令/公告） |
-| 国家能源局 | nea.gov.cn | 4个栏目（首页/新能源司/电力司/规划司） |
-| 华中监管局 | hzj.nea.gov.cn | 4个栏目（监管动态/通知公告/重要信息/时政要闻） |
-| 湖北省能源局 | fgw.hubei.gov.cn | 4个栏目（通知公告/新能源处/电力监管/能源规划）⚠️有WAF |
-| 长江金属铜价 | copper.ccmn.cn | 铜价行情（工作日10点更新，早报用昨日价格） |
+```
+**零碳能源行业早报 | 2026-03-24**
 
-### 行业标准数据来源（3个网站）
+**一、今日最重要 (3条)**
+**1. 【标题】**
+摘要内容（100字以内）...
+👉 影响/价值分析
+🔗 来源｜查看原文
 
-| 站点 | URL | 说明 |
-|------|-----|------|
-| 学兔兔(标准分享网) | bzfxw.com | 能源/电力分类标准，可下载文件 |
-| 全国标准信息公共服务平台 | std.samr.gov.cn | 国家标准查询，支持关键词搜索 |
-| 百度小程序-标准规范集 | vmx4nq.smartapps.baidu.com | ⚠️AI聊天助手，需手动在百度App中使用 |
+**二、政策与行业 (3条)**
+...
 
-### 37个监控关键词
+**三、湖北本地 (2条)**
+...
 
-电网、能源、电力、电价、光伏、容量、绿电直连、零碳、低碳、新能源、分布式、集中式、用电、供电、发电、储能、氢能、充电桩、碳中和、碳达峰、碳、风电、核电、水电、电池、特高压、可再生、清洁能源、绿证、绿电、电力市场、输配电、售电、上网电价、并网、消纳、装机
+**四、AI+电力 (2条)**
+...
+
+**五、铜价与材料**
+| 指标 | 数据 |
+|------|------|
+| 1#铜均价 | **xxxxx元/吨** |
+| 涨跌 | ↑/↓ xxx元/吨 |
+| 价格区间 | xxxxx-xxxxx元/吨 |
+👉 铜价判断和采购建议
+
+**六、重点机会提示**
+👉 **本周关注：**
+1. 具体建议1
+2. 具体建议2
+
+---
+⏰ 早报完成时间：HH:MM
+📰 信息来源：国家发改委、国家能源局...
+```
+
+## 7个数据来源
+
+| 站点 | 说明 |
+|------|------|
+| 国家发改委 (ndrc.gov.cn) | 4个栏目：通知/规范性文件/令/公告 |
+| 国家能源局 (nea.gov.cn) | 4个栏目：首页/新能源司/电力司/规划司 |
+| 华中监管局 (hzj.nea.gov.cn) | 4个栏目：监管动态/通知公告/重要信息/时政要闻 |
+| 湖北省能源局 (fgw.hubei.gov.cn) | 4个栏目 ⚠️有WAF防护，可能抓取失败 |
+| 世纪新能源网 (ne21.com) | 光伏风电储能氢能资讯 |
+| 中国能源网 (china5e.com) | 综合能源新闻 |
+| 长江有色金属网 (ccmn.cn) | 长江现货铜价 |
+
+## 常用命令
+
+```bash
+# 测试运行（不推送、不下载附件）
+node energy_morning_brief.cjs --dry-run --no-download
+
+# 指定日期测试
+node energy_morning_brief.cjs --date 2026-03-24 --dry-run --no-download
+
+# 正式运行（生成早报+下载附件）
+node energy_morning_brief.cjs
+
+# 正式运行+推送企业微信
+node energy_morning_brief.cjs --wecom-url "WEBHOOK_URL"
+```
 
 ## 注意事项
 
-- 湖北省能源局(fgw.hubei.gov.cn)有WAF防护，HTTP请求可能返回412，脚本会自动跳过并在异常信息中标注。如该站重要内容需要，可使用 `web_fetch` 手动补充
-- 铜价在工作日上午10点更新，所以8点早报使用的是前一交易日的铜价
-- 企业微信 markdown 有 4096 字节限制，脚本会自动截断
-- SHA256哈希去重，14天滚动窗口，绝不重复推送
-- 每篇文章都会抓取详情页提取200字摘要 + 智能价值分析
-- 所有PDF/DOC附件自动下载到 `审核池/日期/` 目录
+- 需要 Node.js >= 18（支持原生 fetch）
+- 湖北站有WAF，脚本会自动跳过，这是正常的
+- 企业微信 markdown 有4KB限制，脚本自动截断
+- SHA256去重，14天窗口，不会重复推送
+- 铜价工作日10点更新，早报用前一交易日价格
