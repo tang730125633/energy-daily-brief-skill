@@ -905,22 +905,20 @@ function renderReport(items, crawlTime, targetDate, errors, downloaded, stats) {
 
     const usedKeys = new Set();
 
-    // 精简渲染单条item的辅助函数
+    // 精简渲染：每条只占2行
     function renderItem(it, num) {
       const itemLines = [];
-      itemLines.push(`**${num}. 【${it.title}】**`);
-      // 摘要（精简到2-3句）
+      // 第1行：编号+标题链接+来源
+      itemLines.push(`${num}. [${it.title}](${it.link})（${sourceTag(it)}）`);
+      // 第2行：一句话摘要 + 👉影响，合并在一起
       let desc = it.summary || "";
-      if (desc.length > 100) desc = desc.slice(0, 100) + "...";
-      if (desc && desc !== "（摘要获取失败）" && desc !== "（正文内容较少或格式特殊）") {
-        itemLines.push(desc);
-      }
-      // 价值/影响
+      if (desc.length > 50) desc = desc.slice(0, 50) + "...";
       const val = it.value || generateValue(it);
-      itemLines.push(`👉 ${val}`);
-      // 来源简注（不显示完整链接，只显示来源名）
-      itemLines.push(`🔗 ${sourceTag(it)}｜[查看原文](${it.link})`);
-      itemLines.push("");
+      if (desc && desc !== "（摘要获取失败）" && desc !== "（正文内容较少或格式特殊）") {
+        itemLines.push(`> ${desc} 👉 ${val}`);
+      } else {
+        itemLines.push(`> 👉 ${val}`);
+      }
       return itemLines;
     }
 
@@ -932,8 +930,7 @@ function renderReport(items, crawlTime, targetDate, errors, downloaded, stats) {
       [...importantPool, ...policyItems, ...mediaItems].slice(0, 3);
 
     if (topItems.length > 0) {
-      lines.push(`**一、今日最重要 (${topItems.length}条)**`);
-      lines.push("");
+      lines.push(`**一、今日最重要**`);
       let num = 1;
       for (const it of topItems) {
         usedKeys.add(it.key);
@@ -944,8 +941,7 @@ function renderReport(items, crawlTime, targetDate, errors, downloaded, stats) {
     // 板块2：政策与行业（3条）
     const policyFiltered = policyItems.filter(it => !usedKeys.has(it.key)).slice(0, 3);
     if (policyFiltered.length > 0) {
-      lines.push(`**二、政策与行业 (${policyFiltered.length}条)**`);
-      lines.push("");
+      lines.push(`**二、政策与行业**`);
       let num = 1;
       for (const it of policyFiltered) {
         usedKeys.add(it.key);
@@ -956,8 +952,7 @@ function renderReport(items, crawlTime, targetDate, errors, downloaded, stats) {
     // 板块3：湖北本地（2条）
     const hubeiFiltered = hubeiItems.filter(it => !usedKeys.has(it.key)).slice(0, 2);
     if (hubeiFiltered.length > 0) {
-      lines.push(`**三、湖北本地 (${hubeiFiltered.length}条)**`);
-      lines.push("");
+      lines.push(`**三、湖北本地**`);
       let num = 1;
       for (const it of hubeiFiltered) {
         usedKeys.add(it.key);
@@ -968,8 +963,7 @@ function renderReport(items, crawlTime, targetDate, errors, downloaded, stats) {
     // 板块4：AI+电力（2条）
     const mediaFiltered = mediaItems.filter(it => !usedKeys.has(it.key)).slice(0, 2);
     if (mediaFiltered.length > 0) {
-      lines.push(`**四、AI+电力 (${mediaFiltered.length}条)**`);
-      lines.push("");
+      lines.push(`**四、AI+电力**`);
       let num = 1;
       for (const it of mediaFiltered) {
         usedKeys.add(it.key);
@@ -977,70 +971,39 @@ function renderReport(items, crawlTime, targetDate, errors, downloaded, stats) {
       }
     }
 
-    // 板块5：铜价与材料（表格形式）
+    // 板块5：铜价与材料（精简一行式）
     if (copperItems.length > 0) {
       lines.push("**五、铜价与材料**");
-      lines.push("");
       const it = copperItems[0];
       usedKeys.add(it.key);
       const pd = it.priceData || {};
 
-      // 表格展示铜价数据
-      lines.push("| 指标 | 数据 |");
-      lines.push("|------|------|");
-      if (pd.avg) lines.push(`| 1#铜均价 | **${pd.avg}元/吨** |`);
+      // 铜价数据一行展示
+      const parts = [];
+      if (pd.avg) parts.push(`均价**${pd.avg}**`);
       if (pd.change) {
-        const changeNum = parseInt(pd.change);
-        const arrow = changeNum > 0 ? "↑" : changeNum < 0 ? "↓" : "→";
-        lines.push(`| 涨跌 | ${arrow} ${pd.change}元/吨 |`);
+        const n = parseInt(pd.change);
+        parts.push(`${n > 0 ? "↑" : n < 0 ? "↓" : "→"}${pd.change}`);
       }
-      if (pd.min && pd.max) lines.push(`| 价格区间 | ${pd.min}-${pd.max}元/吨 |`);
-      if (pd.premium) lines.push(`| 铜升贴水 | ${pd.premium}元/吨 |`);
-      lines.push(`| 日期 | ${it.dateStr} |`);
-      lines.push("");
-
-      // 如果没有结构化数据，用summary兜底显示标题
-      if (!pd.avg && !pd.change) {
-        lines.push(it.summary || it.title);
-        lines.push("");
+      if (pd.min && pd.max) parts.push(`区间${pd.min}-${pd.max}`);
+      if (parts.length > 0) {
+        lines.push(`铜价（元/吨）：${parts.join("，")}｜[详情](${it.link})`);
+      } else {
+        lines.push(`[${it.title}](${it.link})`);
       }
-
-      // 判断语句
-      lines.push(`👉 ${generateCopperJudgment(pd)}`);
-      lines.push(`🔗 长江金属｜[查看原文](${it.link})`);
-      lines.push("");
+      lines.push(`> 👉 ${generateCopperJudgment(pd)}`);
     }
 
-    // 板块6：重点机会提示
-    lines.push("**六、重点机会提示**");
-    lines.push("");
+    // 板块6：机会提示
+    lines.push("**六、机会提示**");
     const hints = generateOpportunity(items);
-    lines.push("👉 **本周关注：**");
-    hints.forEach((h, i) => {
-      lines.push(`${i + 1}. ${h}`);
-    });
-    lines.push("");
+    lines.push(`👉 ${hints.join("；")}`);
   }
 
-  // ===== Footer =====
-  lines.push("---");
-  lines.push(`⏰ 早报完成时间：${formatDateTime(crawlTime)}`);
-
-  // 信息来源列表（只列出实际抓到数据的来源）
-  const sources = [];
-  if (stats.ndrc > 0) sources.push("国家发改委");
-  if (stats.nea > 0) sources.push("国家能源局");
-  if (stats.hzj > 0) sources.push("华中监管局");
-  if (stats.hubei > 0) sources.push("湖北省能源局");
-  if (stats.ne21 > 0) sources.push("世纪新能源网");
-  if (stats.china5e > 0) sources.push("中国能源网");
-  if (stats.copper > 0) sources.push("长江有色金属网");
-  if (sources.length === 0) sources.push("国家发改委", "国家能源局", "华中监管局", "湖北省能源局", "世纪新能源网", "中国能源网", "长江有色金属网");
-  lines.push(`📰 信息来源：${sources.join("、")}`);
-
-  if (errors.length > 0) {
-    lines.push(`⚠️ 异常：${errors.slice(0, 2).map(e => e.split(":")[0]).join("、")}部分页面访问受限`);
-  }
+  // ===== Footer（一行搞定）=====
+  lines.push("");
+  lines.push(`---`);
+  lines.push(`⏰${formatDateTime(crawlTime)} | 📰${["发改委","能源局","华中监管局","湖北能源局","世纪新能源","中国能源网","长江金属"].join("、")}`);
 
   return lines.join("\n");
 }
