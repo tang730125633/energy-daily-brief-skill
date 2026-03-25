@@ -766,26 +766,24 @@ function extractCopperPriceDetail(html, item) {
 function generateValue(item) {
   const t = item.title;
 
-  // 铜价
-  if (item.source === "长江金属-铜价") return "每日铜价参考，影响铜材采购成本和报价决策。";
+  if (item.source === "长江金属-铜价") return "影响采购成本";
 
-  // 政策类
   if (/通知|意见|办法|规定|规划|方案/.test(t)) {
-    if (/电价|容量/.test(t)) return "电价政策直接影响企业用电成本和储能投资收益。";
-    if (/光伏|风电|新能源/.test(t)) return "新能源政策影响项目审批、补贴和并网条件。";
-    if (/碳|绿电|绿证/.test(t)) return "碳交易与绿电政策影响企业碳成本和绿色转型战略。";
-    if (/储能|电池/.test(t)) return "储能政策影响投资建设节奏和商业模式。";
-    if (/电网|输配电/.test(t)) return "电网政策影响输配电价和电力市场改革进程。";
-    return "政策文件，可能影响行业发展方向和企业经营策略。";
+    if (/电价|容量/.test(t)) return "影响用电成本";
+    if (/光伏|风电|新能源/.test(t)) return "影响项目审批";
+    if (/碳|绿电|绿证/.test(t)) return "影响碳成本";
+    if (/储能|电池/.test(t)) return "影响储能投资";
+    if (/电网|输配电/.test(t)) return "影响输配电价";
+    return "关注政策方向";
   }
 
-  // 监管类
-  if (/监管|检查|整治|督导|安全/.test(t)) return "监管动态，关注合规要求和安全标准变化。";
-  if (/市场|交易|竞价|现货/.test(t)) return "电力市场动态，影响交易策略和电价预期。";
-  if (/并网|装机|投产/.test(t)) return "项目进展信息，影响行业供需格局判断。";
+  if (/监管|检查|整治|督导|安全/.test(t)) return "关注合规要求";
+  if (/市场|交易|竞价|现货/.test(t)) return "影响交易策略";
+  if (/并网|装机|投产/.test(t)) return "影响供需格局";
+  if (/湖北|武汉|宜昌|襄阳/.test(t)) return "本地动态";
+  if (/AI|智能|数字化|无人机/.test(t)) return "技术应用";
 
-  // 默认
-  return "行业动态，值得关注。";
+  return "行业动态";
 }
 
 // 根据当日内容自动生成机会提示（返回多条具体可操作建议）
@@ -793,54 +791,33 @@ function generateOpportunity(items) {
   const titles = items.map(it => it.title).join(" ");
   const hints = [];
 
-  // 铜价相关
   const copperItem = items.find(it => it.source === "长江金属-铜价");
   if (copperItem) {
     const pd = copperItem.priceData || {};
     if (pd.change && parseInt(pd.change) < -500) {
-      hints.push(`铜价回调${Math.abs(parseInt(pd.change))}元/吨，下游采购窗口打开，可适时锁定采购`);
+      hints.push(`铜价回调${Math.abs(parseInt(pd.change))}元，关注补库时机`);
     } else if (pd.change && parseInt(pd.change) > 500) {
-      hints.push(`铜价上涨${pd.change}元/吨，建议关注库存管理和成本传导`);
+      hints.push(`铜价涨${pd.change}元，注意成本传导`);
     } else if (pd.avg) {
-      hints.push(`关注铜价走势（均价${pd.avg}元/吨），合理安排采购节奏`);
+      hints.push(`铜价均价${pd.avg}元，正常采购节奏`);
     }
   }
 
-  if (/电价.*调整|容量电价|上网电价/.test(titles)) {
-    hints.push("电价政策调整窗口期，关注储能和售电业务套利空间变化");
-  }
-  if (/光伏.*GW|光伏.*投产|光伏.*并网|分布式/.test(titles)) {
-    hints.push("光伏项目动态频繁，关注组件采购窗口及分布式项目备案机会");
-  }
-  if (/储能.*项目|储能.*招标|储能.*GWh/.test(titles)) {
-    hints.push("储能市场活跃，关注工商业储能项目配套及运维服务机会");
-  }
-  if (/充电桩|充电设施|换电/.test(titles)) {
-    hints.push("充换电基础设施建设加速，关注充电桩运营及电力增容服务");
-  }
-  if (/碳交易|碳排放|CCER|绿证|绿电/.test(titles)) {
-    hints.push("碳市场政策动态，评估企业碳资产管理和绿证交易机会");
-  }
-  if (/电力市场|现货|竞价/.test(titles)) {
-    hints.push("电力市场化改革深入，关注售电侧和需求响应业务增长点");
-  }
-  if (/氢能|制氢|加氢/.test(titles)) {
-    hints.push("氢能产业链政策利好，关注制氢/储运/加注环节投资布局");
-  }
-  if (/风电|海上风电/.test(titles)) {
-    hints.push("风电行业动态活跃，关注海上风电和风电运维市场机会");
-  }
-  if (/核电|核能/.test(titles)) {
-    hints.push("核电项目进展，关注核电设备供应链及配套服务机会");
-  }
+  if (/电价.*调整|容量电价|上网电价/.test(titles)) hints.push("电价调整窗口，关注储能售电套利");
+  if (/光伏.*GW|光伏.*投产|光伏.*并网|分布式/.test(titles)) hints.push("光伏项目活跃，关注采购和备案");
+  if (/储能.*项目|储能.*招标|储能.*GWh/.test(titles)) hints.push("储能招标活跃，关注配套运维");
+  if (/充电桩|充电设施|换电/.test(titles)) hints.push("充换电加速，关注运营增容");
+  if (/碳交易|碳排放|CCER|绿证|绿电/.test(titles)) hints.push("碳市场动态，评估绿证交易");
+  if (/电力市场|现货|竞价/.test(titles)) hints.push("电力市场化深入，关注售电侧");
+  if (/氢能|制氢|加氢/.test(titles)) hints.push("氢能利好，关注产业链布局");
+  if (/风电|海上风电/.test(titles)) hints.push("风电活跃，关注运维市场");
+  if (/核电|核能/.test(titles)) hints.push("核电推进，关注设备供应链");
 
-  // 如果没有匹配到任何，给默认
   if (hints.length === 0) {
-    hints.push("持续跟踪能源政策动态，把握绿色转型中的业务增长机会");
-    hints.push("关注本周政策发布窗口，及时调整项目推进节奏");
+    hints.push("跟踪政策动态，把握绿色转型机会");
   }
 
-  return hints.slice(0, 3); // 最多3条
+  return hints.slice(0, 3);
 }
 
 // ============================================================
@@ -1007,30 +984,18 @@ function renderReport(items, crawlTime, targetDate, errors, downloaded, stats) {
 
 // 铜价判断语句生成
 function generateCopperJudgment(pd) {
-  if (!pd.avg) return "铜价数据获取中，建议关注长江有色金属网实时行情。";
+  if (!pd.avg) return "关注长江有色金属网实时行情";
 
   const avg = pd.avg;
   const change = pd.change ? parseInt(pd.change) : 0;
 
-  if (change < -1000) {
-    return `铜价大幅回落${Math.abs(change)}元/吨，短期恐慌情绪释放，下游可适时锁定采购成本。`;
-  }
-  if (change < -300) {
-    return `铜价回调${Math.abs(change)}元/吨，采购窗口期显现，建议关注补库时机。`;
-  }
-  if (change > 1000) {
-    return `铜价大幅上涨${change}元/吨，成本压力加大，建议加快在手订单锁价。`;
-  }
-  if (change > 300) {
-    return `铜价上行${change}元/吨，注意原材料成本传导，必要时调整报价策略。`;
-  }
-  if (avg > 80000) {
-    return `铜价高位运行（均价${avg}元/吨），建议合理控制库存，按需采购。`;
-  }
-  if (avg < 65000) {
-    return `铜价处于相对低位（均价${avg}元/吨），可考虑战略性补库。`;
-  }
-  return `铜价平稳运行（均价${avg}元/吨），建议维持正常采购节奏。`;
+  if (change < -1000) return `大跌${Math.abs(change)}元，可锁定采购`;
+  if (change < -300) return `回调${Math.abs(change)}元，关注补库时机`;
+  if (change > 1000) return `大涨${change}元，建议加快锁价`;
+  if (change > 300) return `上行${change}元，注意成本传导`;
+  if (avg > 80000) return "高位运行，按需采购控库存";
+  if (avg < 65000) return "相对低位，可考虑战略补库";
+  return "平稳运行，维持正常采购节奏";
 }
 
 // ============================================================
