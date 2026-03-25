@@ -905,12 +905,10 @@ function renderReport(items, crawlTime, targetDate, errors, downloaded, stats) {
 
     const usedKeys = new Set();
 
-    // 纯文本渲染：每条2行，不用任何markdown语法
+    // 每条2行：标题带链接 + 👉影响
     function renderItem(it, num) {
       const itemLines = [];
-      // 第1行：编号+标题+来源
-      itemLines.push(`${num}. ${it.title}（${sourceTag(it)}）`);
-      // 第2行：一句话影响/价值
+      itemLines.push(`${num}. [${it.title}](${it.link})（${sourceTag(it)}）`);
       const val = it.value || generateValue(it);
       itemLines.push(`   👉 ${val}`);
       return itemLines;
@@ -985,9 +983,9 @@ function renderReport(items, crawlTime, targetDate, errors, downloaded, stats) {
       }
       if (pd.min && pd.max) parts.push(`区间${pd.min}-${pd.max}`);
       if (parts.length > 0) {
-        lines.push(`铜价（元/吨）：${parts.join(" | ")}`);
+        lines.push(`[铜价](${it.link})（元/吨）：${parts.join(" | ")}`);
       } else {
-        lines.push(it.title);
+        lines.push(`[${it.title}](${it.link})`);
       }
       lines.push(`   👉 ${generateCopperJudgment(pd)}`);
     }
